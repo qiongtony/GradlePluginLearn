@@ -11,10 +11,19 @@ import com.android.build.gradle.internal.pipeline.TransformManager;
 import com.android.utils.FileUtils;
 
 import java.io.File;
+import java.io.FileFilter;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.ClassWriter;
 
 public class LoggerTransform extends Transform {
     @Override
@@ -59,6 +68,28 @@ public class LoggerTransform extends Transform {
             transformInput.getDirectoryInputs().forEach(directoryInput -> {
                 File directoryInputFile = directoryInput.getFile();
                 List<File> files = filterClassFiles(directoryInputFile);
+                for (File file : files){
+                    try(FileInputStream is = new FileInputStream(file);
+                        FileOutputStream os = new FileOutputStream(file.getPath())
+                    ) {
+                        ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+                        ClassVisitor cv = new ActivityClassVisitor(cw);
+
+                        // 对class文件进行读取与解析
+                        ClassReader cr = new ClassReader(is);
+                        // 依次调用ClassVisitor接口的各个方法
+                        cr.accept(cv, ClassReader.EXPAND_FRAMES);
+                        byte[] bytes = cw.toByteArray();
+
+                        os.write(bytes);
+                        os.flush();
+
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
                 // 输入目录复制倒目标目录
                 File dest = provider.getContentLocation(
                         directoryInput.getName(),
@@ -82,7 +113,49 @@ public class LoggerTransform extends Transform {
                         jarInput.getScopes(),
                         Format.JAR
                 );
+
+                try {
+                    FileUtils.copyFile(jarInputFile, dest);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             });
         });
+    }
+
+    /**
+     * 遍历文件，返回class文件
+     * @param file
+     * @return
+     */
+    private List<File> filterClassFiles(File file) {
+        List<File> classFiles = new ArrayList<>();
+        if (file != null) {
+            listFiles(file, classFiles, new FileFilter() {
+                @Override
+                public boolean accept(File file) {
+                    return file.getName().endsWith(".class");
+                }
+            });
+        }
+        return classFiles;
+    }
+
+    private void listFiles(File file, List<File> result, FileFilter filter) {
+        if (result == null || file == null) {
+            return;
+        }
+        if (file.isDirectory()) {
+            File[] children = file.listFiles();
+            if (children != null) {
+                for (File child : children) {
+                    listFiles(child, result, filter);
+                }
+            }
+        } else {
+            if (filter == null || filter.accept(file)) {
+                result.add(file);
+            }
+        }
     }
 }

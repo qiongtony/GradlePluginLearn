@@ -37,16 +37,81 @@ public class ActivityClassVisitor extends ClassVisitor{
         super.visitEnd();
         // AppCompatActivity的子类
         if (superName != null && superName.equals(ACTIVITY_SUPER_NAME)) {
+            if (!visitedOnResume){
+                visitedOnResume = true;
+                insertMethodAndLog(ON_RESUME);
+            }
 
+            if (!visitedOnPause){
+                visitedOnPause = true;
+                insertMethodAndLog(ON_PAUSE);
+            }
 
         }
     }
 
     @Override
     public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-        return super.visitMethod(access, name, descriptor, signature, exceptions);
+        MethodVisitor mv = super.visitMethod(access, name, descriptor, signature, exceptions);
+        if (superName != null && superName.equals(ACTIVITY_SUPER_NAME)){
+            if (ON_PAUSE.equals(name)){
+                visitedOnPause = true;
+                addLogCodeForMethod(mv, name);
+
+            } else if (ON_RESUME.equals(name)) {
+                visitedOnResume = true;
+                addLogCodeForMethod(mv, name);
+            }
+        }
+        return mv;
+
     }
 
+    private void addLogCodeForMethod(MethodVisitor mv, String methodName){
+        mv.visitLdcInsn("lenebf");
+        // 创建一个StringBuilder
+        mv.visitTypeInsn(Opcodes.NEW, "java/lang/StringBuilder");
+        mv.visitInsn(Opcodes.DUP);
+        // 调用StringBuilder的初始化方法
+        mv.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "()V", false);
+        mv.visitVarInsn(Opcodes.ALOAD, 0);
+        // 获取当前类的simplaName
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Object", "getClass", "()Ljava/lang/Class;", false);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Class", "getSimpleName", "()Ljava/lang/String;", false);
+        // 将当前类的simpleName追加到StringBuilder
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder","append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false);
+        // 将方法名追加进SB
+        mv.visitLdcInsn("：" +  methodName);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false);
+        // 调用 StringBuilder 的 toString 方法将 StringBuilder 转化为 String
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "toString", "()Ljava/lang/String;", false);
+        // 调用Log.i
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, "android/util/Log", "i", "(Ljava/lang/String;Ljava/lang/String;)I", false);
+        mv.visitInsn(Opcodes.POP);
+    }
 
+    private void insertMethodAndLog(String methodName){
+        MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PROTECTED, methodName, "()V", null, null);
+        // 访问新方法填充方法逻辑，
+        mv.visitCode();
+        mv.visitVarInsn(Opcodes.ALOAD, 0);
+        mv.visitMethodInsn(Opcodes.INVOKESPECIAL, "androidx/appcompat/app/AppCompatActivity", methodName, "()V", false);
+        mv.visitLdcInsn("lenebf");
+        mv.visitTypeInsn(Opcodes.NEW, "java/lang/StringBuilder");
+        mv.visitInsn(Opcodes.DUP);
+        mv.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "()V", false);
+        mv.visitVarInsn(Opcodes.ALOAD, 0);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Object", "getClass", "()Ljava/lang/Class;", false);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Class", "getSimpleName", "()Ljava/lang/String;", false);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false);
+        mv.visitLdcInsn(": " + methodName);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "toString", "()Ljava/lang/String;", false);
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, "android/util/Log", "d", "(Ljava/lang/String;Ljava/lang/String;)I", false);
+        mv.visitInsn(Opcodes.POP);
+        mv.visitInsn(Opcodes.RETURN);
+        mv.visitEnd();
+
+    }
 
 }
