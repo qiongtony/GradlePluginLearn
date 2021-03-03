@@ -11,7 +11,7 @@ import org.gradle.api.Plugin
 /**
  * A simple 'hello world' plugin.
  */
-public class HelloPlugin implements Plugin<Project> {
+public class AcLoggerPlugin implements Plugin<Project> {
     public void apply(Project project) {
         def android = project.extensions.getByType(AppExtension)
         android.registerTransform(new LoggerTransform());

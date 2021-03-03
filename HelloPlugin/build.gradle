@@ -12,7 +12,7 @@ plugins {
 
     // Apply the Groovy plugin to add support for Groovy
     id 'groovy'
-
+    // 发布插件
     id 'maven-publish'
 }
 
@@ -33,18 +33,18 @@ dependencies {
 gradlePlugin {
     // Define the plugin
     plugins {
-        greeting {
-            id = 'com.wws.plugin.al'
-            implementationClass = 'com.wws.plugin.HelloPlugin'
+        hello {
+            id = 'com.wws.helloplugin.ac_logger'
+            implementationClass = 'com.wws.plugin.AcLoggerPlugin'
         }
     }
 }
 
 publishing {
     publications {
-        acLogger(MavenPublication) {
+        hello(MavenPublication) {
             // 插件的组ID，建议设置为插件的包名
-            groupId = 'com.wws.plugin'
+            groupId = 'com.wws.helloplugin'
             // 翻译过来是 工件ID，我的理解是插件的名字
             artifactId = 'ac_logger'
             version = '0.0.1'

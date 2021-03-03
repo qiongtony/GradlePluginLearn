@@ -1,5 +1,7 @@
-apply plugin: 'com.android.application'
-//apply plugin: 'com.wws.plugin.al'
+plugins{
+    id 'com.android.application'
+    id 'com.wws.helloplugin.ac_logger'
+}
 
 android {
     compileSdkVersion 30
@@ -30,4 +32,7 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+
+//    implementation files('libs/HelloPlugin-unspecified.jar')
 }
+
